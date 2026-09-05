@@ -4,6 +4,180 @@ import { useFrame } from '@react-three/fiber';
 import { RoundedBox } from '@react-three/drei';
 import * as THREE from 'three';
 import { lerp, normalizeInRange, EXPLODE_POSITIONS, easing } from '@/lib/animation';
+import LayerCallout from './LayerCallout';
+
+// ── Shared materials (allocated once — no re-creation per render) ──
+// Anodized CNC aluminum — MeshPhysicalMaterial for clearcoat sheen
+const matAlumTop = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color('#1e1e22'),
+  roughness: 0.18,
+  metalness: 0.92,
+  clearcoat: 0.55,
+  clearcoatRoughness: 0.08,
+  envMapIntensity: 1.4,
+});
+
+const matAlumBottom = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color('#131316'),
+  roughness: 0.20,
+  metalness: 0.90,
+  clearcoat: 0.45,
+  clearcoatRoughness: 0.1,
+  envMapIntensity: 1.3,
+});
+
+const matChamfer = new THREE.MeshStandardMaterial({
+  color: new THREE.Color('#e8c97d'),
+  roughness: 0.04,
+  metalness: 1.0,
+  emissive: new THREE.Color('#e8c97d'),
+  emissiveIntensity: 0.22,
+});
+
+// Champagne anodized plate
+const matPlate = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color('#c8a84e'),
+  roughness: 0.18,
+  metalness: 0.88,
+  clearcoat: 0.35,
+  clearcoatRoughness: 0.12,
+});
+
+// PORON foam — matte orange-red (real PORON color)
+const matFoam = new THREE.MeshStandardMaterial({
+  color: new THREE.Color('#2a1a10'),
+  roughness: 0.97,
+  metalness: 0.0,
+});
+
+// PCB substrate — FR4 emerald-green solder mask
+const matPCB = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color('#0b1e10'),
+  roughness: 0.28,
+  metalness: 0.35,
+  clearcoat: 0.15,
+  clearcoatRoughness: 0.4,
+  envMapIntensity: 0.8,
+});
+
+// Gasket silicone — matte black rubber
+const matGasket = new THREE.MeshStandardMaterial({
+  color: new THREE.Color('#090909'),
+  roughness: 0.99,
+  metalness: 0.0,
+});
+
+// PVD mirror brass weight bar
+const matWeightBar = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color('#e8c97d'),
+  roughness: 0.02,
+  metalness: 1.0,
+  clearcoat: 1.0,
+  clearcoatRoughness: 0.0,
+  envMapIntensity: 2.5,
+});
+
+// USB-C stainless
+const matUSBC = new THREE.MeshStandardMaterial({
+  color: new THREE.Color('#b8b8c0'),
+  roughness: 0.12,
+  metalness: 0.98,
+  envMapIntensity: 1.8,
+});
+
+// Knob body — dark anodized with micro-knurling impression
+const matKnobBody = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color('#111114'),
+  roughness: 0.45,
+  metalness: 0.80,
+  clearcoat: 0.2,
+  clearcoatRoughness: 0.6,
+});
+
+const matKnobTop = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color('#e8c97d'),
+  roughness: 0.04,
+  metalness: 1.0,
+  clearcoat: 1.0,
+  clearcoatRoughness: 0.02,
+  envMapIntensity: 2.0,
+});
+
+// Silicone feet
+const matFeet = new THREE.MeshStandardMaterial({
+  color: new THREE.Color('#101010'),
+  roughness: 0.99,
+  metalness: 0.0,
+});
+
+// MCU chip — BGA package
+const matMCU = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color('#0a0a0a'),
+  roughness: 0.30,
+  metalness: 0.25,
+  clearcoat: 0.5,
+  clearcoatRoughness: 0.1,
+});
+
+// Gold PCB traces
+const matTraces = new THREE.MeshStandardMaterial({
+  color: new THREE.Color('#d4a838'),
+  roughness: 0.08,
+  metalness: 0.98,
+  emissive: new THREE.Color('#c89824'),
+  emissiveIntensity: 0.18,
+});
+
+// Keycap materials (PBT-style matte)
+const matKeycapStd = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color('#161618'),
+  roughness: 0.60,
+  metalness: 0.0,
+  clearcoat: 0.08,
+  clearcoatRoughness: 0.9,
+  envMapIntensity: 0.3,
+});
+
+const matKeycapAccent = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color('#d8b96a'),
+  roughness: 0.20,
+  metalness: 0.75,
+  clearcoat: 0.6,
+  clearcoatRoughness: 0.08,
+  envMapIntensity: 1.5,
+});
+
+// Switch housing materials
+const matSwitchTop = new THREE.MeshPhysicalMaterial({
+  color: new THREE.Color('#d0e2f0'),
+  transparent: true,
+  opacity: 0.62,
+  roughness: 0.08,
+  metalness: 0.05,
+  transmission: 0.78,
+  ior: 1.52,
+  thickness: 0.1,
+});
+
+const matSwitchBase = new THREE.MeshStandardMaterial({
+  color: new THREE.Color('#181820'),
+  roughness: 0.58,
+  metalness: 0.18,
+});
+
+const matSwitchStem = new THREE.MeshStandardMaterial({
+  color: new THREE.Color('#c83830'),
+  roughness: 0.25,
+  metalness: 0.12,
+});
+
+const matSpring = new THREE.MeshStandardMaterial({
+  color: new THREE.Color('#d4aa44'),
+  roughness: 0.10,
+  metalness: 0.98,
+  emissive: new THREE.Color('#c89820'),
+  emissiveIntensity: 0.12,
+});
 
 interface KeyboardModelProps {
   scrollProgress: number;
@@ -117,6 +291,33 @@ const STANDARD_1U_KEYS = KEY_LAYOUT.filter((k) => k.type === '1u' && !k.isAccent
 const ACCENT_1U_KEYS   = KEY_LAYOUT.filter((k) => k.type === '1u' && k.isAccent);
 const SPECIAL_KEYS     = KEY_LAYOUT.filter((k) => k.type !== '1u');
 
+// ── Animated SMD LED Diode on PCB ──
+function LEDDiode({ index }: { index: number }) {
+  const matRef = useRef<THREE.MeshStandardMaterial>(null!);
+  useFrame(({ clock }) => {
+    if (matRef.current) {
+      const t = clock.elapsedTime;
+      // Phase-shifted breathing wave across PCB diodes
+      const pulse = 0.5 + 0.5 * Math.sin(t * 2.4 + index * 0.65);
+      matRef.current.emissiveIntensity = 0.35 + pulse * 0.95;
+    }
+  });
+
+  return (
+    <mesh position={[0, 0.005, (index % 2 === 0 ? 0.25 : -0.25)]}>
+      <boxGeometry args={[0.035, 0.012, 0.035]} />
+      <meshStandardMaterial
+        ref={matRef}
+        color="#ffe8a3"
+        emissive="#ffb703"
+        emissiveIntensity={0.6}
+        roughness={0.15}
+        metalness={0.2}
+      />
+    </mesh>
+  );
+}
+
 // ─── Instanced Keycaps Component ───
 function KeycapAssembly() {
   const stdRef    = useRef<THREE.InstancedMesh>(null!);
@@ -142,35 +343,17 @@ function KeycapAssembly() {
 
   return (
     <group>
-      {/* Standard Obsidian keys */}
-      <instancedMesh ref={stdRef} args={[key1uGeo, undefined, STANDARD_1U_KEYS.length]} castShadow receiveShadow>
-        <meshStandardMaterial
-          color="#18181a"
-          roughness={0.38}
-          metalness={0.12}
-        />
-      </instancedMesh>
+      {/* Standard PBT Matte keys */}
+      <instancedMesh ref={stdRef} args={[key1uGeo, matKeycapStd, STANDARD_1U_KEYS.length]} castShadow receiveShadow />
 
-      {/* Gold Accent 1u keys (Esc, Delete, arrows) */}
-      <instancedMesh ref={accentRef} args={[key1uGeo, undefined, ACCENT_1U_KEYS.length]} castShadow receiveShadow>
-        <meshStandardMaterial
-          color="#e8c97d"
-          roughness={0.22}
-          metalness={0.85}
-        />
-      </instancedMesh>
+      {/* Gold Accent 1u keys */}
+      <instancedMesh ref={accentRef} args={[key1uGeo, matKeycapAccent, ACCENT_1U_KEYS.length]} castShadow receiveShadow />
 
       {/* Special sculpted keys: Spacebar & Enter */}
       {SPECIAL_KEYS.map((k, i) => {
         const geo = k.type === 'spacebar' ? spacebarGeo : enterKeyGeo;
         return (
-          <mesh key={i} position={k.pos} geometry={geo} castShadow receiveShadow>
-            <meshStandardMaterial
-              color={k.isAccent ? '#e8c97d' : '#18181a'}
-              roughness={k.isAccent ? 0.22 : 0.38}
-              metalness={k.isAccent ? 0.85 : 0.12}
-            />
-          </mesh>
+          <mesh key={i} position={k.pos} geometry={geo} material={k.isAccent ? matKeycapAccent : matKeycapStd} castShadow receiveShadow />
         );
       })}
     </group>
@@ -179,76 +362,39 @@ function KeycapAssembly() {
 
 // ─── Instanced Realistic Mechanical Switches ───
 function SwitchesAssembly() {
-  const topHousingRef = useRef<THREE.InstancedMesh>(null!);
+  const topHousingRef  = useRef<THREE.InstancedMesh>(null!);
   const baseHousingRef = useRef<THREE.InstancedMesh>(null!);
-  const stemRef       = useRef<THREE.InstancedMesh>(null!);
-  const springRef     = useRef<THREE.InstancedMesh>(null!);
+  const stemRef        = useRef<THREE.InstancedMesh>(null!);
+  const springRef      = useRef<THREE.InstancedMesh>(null!);
 
-  // Switch positions
-  const switchPositions = useMemo(() => {
-    return KEY_LAYOUT.map((k) => k.pos);
-  }, []);
+  const switchPositions = useMemo(() => KEY_LAYOUT.map((k) => k.pos), []);
 
   useEffect(() => {
     const dummy = new THREE.Object3D();
-
     switchPositions.forEach((pos, i) => {
-      // Top housing
-      dummy.position.set(pos[0], 0.02, pos[2]);
-      dummy.updateMatrix();
-      topHousingRef.current?.setMatrixAt(i, dummy.matrix);
-
-      // Base housing
-      dummy.position.set(pos[0], -0.025, pos[2]);
-      dummy.updateMatrix();
-      baseHousingRef.current?.setMatrixAt(i, dummy.matrix);
-
-      // Ruby/Gold Stem cross
-      dummy.position.set(pos[0], 0.045, pos[2]);
-      dummy.updateMatrix();
-      stemRef.current?.setMatrixAt(i, dummy.matrix);
-
-      // Internal spring
-      dummy.position.set(pos[0], 0.015, pos[2]);
-      dummy.updateMatrix();
-      springRef.current?.setMatrixAt(i, dummy.matrix);
+      dummy.position.set(pos[0], 0.02, pos[2]);   dummy.updateMatrix(); topHousingRef.current?.setMatrixAt(i, dummy.matrix);
     });
-
-    if (topHousingRef.current) topHousingRef.current.instanceMatrix.needsUpdate = true;
+    switchPositions.forEach((pos, i) => {
+      dummy.position.set(pos[0], -0.025, pos[2]); dummy.updateMatrix(); baseHousingRef.current?.setMatrixAt(i, dummy.matrix);
+    });
+    switchPositions.forEach((pos, i) => {
+      dummy.position.set(pos[0], 0.045, pos[2]);  dummy.updateMatrix(); stemRef.current?.setMatrixAt(i, dummy.matrix);
+    });
+    switchPositions.forEach((pos, i) => {
+      dummy.position.set(pos[0], 0.015, pos[2]);  dummy.updateMatrix(); springRef.current?.setMatrixAt(i, dummy.matrix);
+    });
+    if (topHousingRef.current)  topHousingRef.current.instanceMatrix.needsUpdate  = true;
     if (baseHousingRef.current) baseHousingRef.current.instanceMatrix.needsUpdate = true;
-    if (stemRef.current) stemRef.current.instanceMatrix.needsUpdate = true;
-    if (springRef.current) springRef.current.instanceMatrix.needsUpdate = true;
+    if (stemRef.current)        stemRef.current.instanceMatrix.needsUpdate        = true;
+    if (springRef.current)      springRef.current.instanceMatrix.needsUpdate      = true;
   }, [switchPositions]);
 
   return (
     <group>
-      {/* Translucent Polycarbonate Upper Housing */}
-      <instancedMesh ref={topHousingRef} args={[switchTopGeo, undefined, switchPositions.length]} castShadow>
-        <meshPhysicalMaterial
-          color="#dbe6f0"
-          transparent
-          opacity={0.65}
-          roughness={0.12}
-          metalness={0.1}
-          transmission={0.7}
-          ior={1.48}
-        />
-      </instancedMesh>
-
-      {/* Nylon Black Bottom Housing */}
-      <instancedMesh ref={baseHousingRef} args={[switchBaseGeo, undefined, switchPositions.length]} castShadow>
-        <meshStandardMaterial color="#1c1c22" roughness={0.6} metalness={0.2} />
-      </instancedMesh>
-
-      {/* Ruby Red / Amber Linear Stem */}
-      <instancedMesh ref={stemRef} args={[switchStemGeo, undefined, switchPositions.length]} castShadow>
-        <meshStandardMaterial color="#d44a3a" roughness={0.3} metalness={0.2} />
-      </instancedMesh>
-
-      {/* Internal Gold Coil Spring */}
-      <instancedMesh ref={springRef} args={[switchSpringGeo, undefined, switchPositions.length]}>
-        <meshStandardMaterial color="#e8c97d" roughness={0.15} metalness={0.95} />
-      </instancedMesh>
+      <instancedMesh ref={topHousingRef}  args={[switchTopGeo,    matSwitchTop,  switchPositions.length]} castShadow />
+      <instancedMesh ref={baseHousingRef} args={[switchBaseGeo,   matSwitchBase, switchPositions.length]} castShadow />
+      <instancedMesh ref={stemRef}        args={[switchStemGeo,   matSwitchStem, switchPositions.length]} castShadow />
+      <instancedMesh ref={springRef}      args={[switchSpringGeo, matSpring,     switchPositions.length]} />
     </group>
   );
 }
@@ -308,67 +454,105 @@ export default function KeyboardModel({ scrollProgress }: KeyboardModelProps) {
 
       {/* ── Layer 0: CNC Top Chassis ── */}
       <group ref={caseTRef}>
-        {/* CNC Beveled Anodized Frame */}
+        {/* CNC Beveled Anodized Frame — MeshPhysical with clearcoat */}
         <RoundedBox args={[3.80, 0.12, 1.64]} radius={0.06} castShadow>
-          <meshStandardMaterial
-            color="#222226"
-            roughness={0.22}
-            metalness={0.88}
-          />
+          <primitive object={matAlumTop} attach="material" />
         </RoundedBox>
 
-        {/* Polished Chamfer Accent Ring */}
-        <mesh position={[0, 0.061, 0]}>
-          <boxGeometry args={[3.58, 0.003, 1.42]} />
-          <meshStandardMaterial
-            color="#e8c97d"
-            roughness={0.1}
-            metalness={0.98}
-            emissive="#e8c97d"
-            emissiveIntensity={0.08}
-          />
+        {/* Polished Chamfer Accent Ring — bright emissive gold */}
+        <mesh position={[0, 0.062, 0]}>
+          <boxGeometry args={[3.60, 0.003, 1.43]} />
+          <primitive object={matChamfer} attach="material" />
         </mesh>
+
+        {/* Inner bezel shadow groove */}
+        <mesh position={[0, 0.058, 0]}>
+          <boxGeometry args={[3.55, 0.002, 1.38]} />
+          <meshStandardMaterial color="#080808" roughness={1} metalness={0} />
+        </mesh>
+
+        {/* Technical Callout 01: Carcasa Superior CNC */}
+        <LayerCallout
+          layerNum="01"
+          category="CHASIS SUPERIOR"
+          title="Carcasa CNC 6063"
+          description="Aluminio anodizado aeroespacial con bisel biselado de 45° pulido con diamante."
+          spec="Tolerancia CNC ±0.01mm"
+          side="left"
+          anchor={[-1.78, 0.06, -0.4]}
+          scrollProgress={scrollProgress}
+          triggerProgress={0.14}
+          lineDirection="down"
+        />
       </group>
 
       {/* ── Rotary Encoder Knob (Top Right) ── */}
       <group ref={knobRef} position={[1.62, 0.06, -0.52]}>
         {/* Diamond-knurled body */}
         <mesh geometry={knobBaseGeo} castShadow>
-          <meshStandardMaterial
-            color="#141416"
-            roughness={0.35}
-            metalness={0.85}
-          />
+          <primitive object={matKnobBody} attach="material" />
         </mesh>
-        {/* Gold beveled cap */}
-        <mesh position={[0, 0.065, 0]} geometry={knobTopGeo}>
-          <meshStandardMaterial
-            color="#e8c97d"
-            roughness={0.08}
-            metalness={0.98}
-          />
+        {/* Knurling ring detail: 3 thin grooves to simulate CNC knurling */}
+        {[-0.036, 0, 0.036].map((dy, i) => (
+          <mesh key={i} position={[0, dy, 0]} rotation={[0, 0, 0]}>
+            <cylinderGeometry args={[0.112, 0.112, 0.008, 24]} />
+            <meshStandardMaterial color="#0a0a0c" roughness={0.9} metalness={0.5} />
+          </mesh>
+        ))}
+        {/* Gold mirror-polished top cap */}
+        <mesh position={[0, 0.068, 0]} geometry={knobTopGeo}>
+          <primitive object={matKnobTop} attach="material" />
+        </mesh>
+        {/* Side indicator dot */}
+        <mesh position={[0.108, 0.02, 0]}>
+          <sphereGeometry args={[0.008, 8, 8]} />
+          <meshStandardMaterial color="#e8c97d" emissive="#e8c97d" emissiveIntensity={1.2} roughness={0.1} metalness={0.9} />
         </mesh>
       </group>
 
       {/* ── Layer 1: Sculpted Keycaps Assembly ── */}
       <group ref={keycapsRef}>
         <KeycapAssembly />
+
+        {/* Technical Callout 02: Keycaps PBT Doubleshot */}
+        <LayerCallout
+          layerNum="02"
+          category="KEYCAPS"
+          title="Keycaps PBT Doubleshot"
+          description="Perfil Cherry con leyendas indelebles de doble inyección."
+          spec="PBT 1.5mm anti-brillo"
+          side="right"
+          anchor={[1.45, 0.06, -0.28]}
+          scrollProgress={scrollProgress}
+          triggerProgress={0.26}
+          lineDirection="up"
+        />
       </group>
 
       {/* ── Layer 2: Mechanical Switches Assembly ── */}
       <group ref={switchesRef}>
         <SwitchesAssembly />
+
+        {/* Technical Callout 03: Switches Lineales */}
+        <LayerCallout
+          layerNum="03"
+          category="SWITCHES"
+          title="Switches Lineales Lubed"
+          description="Vástago POM autolubricante y carcasas de policarbonato con resortes dorados."
+          spec="Krytox GPL 205g0"
+          side="left"
+          anchor={[-1.55, 0.04, -0.05]}
+          scrollProgress={scrollProgress}
+          triggerProgress={0.38}
+          lineDirection="down"
+        />
       </group>
 
       {/* ── Layer 3: Switch Mounting Plate with Gasket Tabs ── */}
       <group ref={plateRef}>
         {/* Anodized Champagne Gold Plate */}
         <mesh geometry={plateGeo} castShadow receiveShadow>
-          <meshStandardMaterial
-            color="#d4b465"
-            roughness={0.25}
-            metalness={0.82}
-          />
+          <primitive object={matPlate} attach="material" />
         </mesh>
         {/* Perimeter Poron Gasket Dampening Tabs */}
         {[
@@ -378,95 +562,141 @@ export default function KeyboardModel({ scrollProgress }: KeyboardModelProps) {
           [-0.8, 0, 0.73],  [0.8, 0, 0.73],
         ].map(([x, y, z], idx) => (
           <mesh key={idx} position={[x, y, z]} geometry={gasketTabGeo}>
-            <meshStandardMaterial color="#111111" roughness={0.98} />
+            <primitive object={matGasket} attach="material" />
           </mesh>
         ))}
+
+        {/* Technical Callout 04: Placa Champagne & Gaskets */}
+        <LayerCallout
+          layerNum="04"
+          category="MONTAJE GASKET"
+          title="Placa Champagne & Gaskets"
+          description="Aislamiento acústico elástico por juntas perimetrales de Poron."
+          spec="Aislamiento 3.5mm"
+          side="right"
+          anchor={[1.78, 0.02, 0.35]}
+          scrollProgress={scrollProgress}
+          triggerProgress={0.50}
+          lineDirection="down"
+        />
       </group>
 
       {/* ── Layer 4: Acoustic PORON & PE Dampener Foam ── */}
       <group ref={foamRef}>
         <mesh geometry={foamGeo} castShadow>
-          <meshStandardMaterial color="#141416" roughness={0.96} />
+          <primitive object={matFoam} attach="material" />
         </mesh>
+
+        {/* Technical Callout 05: Espuma Acústica PORON */}
+        <LayerCallout
+          layerNum="05"
+          category="ACÚSTICA"
+          title="Espuma PORON & IXPE"
+          description="Estructura celular de alta densidad para sonido Thock puro."
+          spec="Atenuación -14dB"
+          side="left"
+          anchor={[-1.72, 0.02, 0.1]}
+          scrollProgress={scrollProgress}
+          triggerProgress={0.62}
+          lineDirection="down"
+        />
       </group>
 
       {/* ── Layer 5: Audiophile Circuit PCB with USB-C ── */}
       <group ref={pcbRef}>
-        {/* Matte Black / Emerald Substrate */}
+        {/* FR4 Emerald-green substrate */}
         <mesh geometry={pcbGeo} castShadow receiveShadow>
-          <meshStandardMaterial color="#0c1a14" roughness={0.35} metalness={0.4} />
+          <primitive object={matPCB} attach="material" />
         </mesh>
 
-        {/* Central ARM MCU Chip */}
+        {/* ARM MCU Chip — BGA black IC package */}
         <mesh position={[0, 0.03, 0]} geometry={mcuChipGeo}>
-          <meshStandardMaterial color="#111111" roughness={0.4} metalness={0.3} />
+          <primitive object={matMCU} attach="material" />
         </mesh>
+
+        {/* Capacitors row near MCU */}
+        {[-0.22, -0.11, 0, 0.11, 0.22].map((x, i) => (
+          <mesh key={i} position={[x, 0.028, 0.18]}>
+            <cylinderGeometry args={[0.018, 0.018, 0.036, 8]} />
+            <meshStandardMaterial color="#1a1a2a" roughness={0.5} metalness={0.4} />
+          </mesh>
+        ))}
 
         {/* Real CNC USB-C Female Port (Rear Center) */}
         <group position={[0, 0.015, -0.73]}>
           <mesh geometry={usbcPortGeo} castShadow>
-            <meshStandardMaterial color="#a0a0a8" roughness={0.2} metalness={0.95} />
+            <primitive object={matUSBC} attach="material" />
           </mesh>
           <mesh position={[0, 0, -0.045]} geometry={usbcSlotGeo}>
-            <meshBasicMaterial color="#050505" />
+            <meshBasicMaterial color="#030303" />
           </mesh>
         </group>
 
-        {/* Gold Circuit Traces & RGB LED Array */}
+        {/* Gold Circuit Traces */}
         {Array.from({ length: 9 }, (_, i) => (
           <group key={i} position={[-1.52 + i * 0.38, 0.026, 0]}>
-            {/* Trace line */}
             <mesh>
-              <boxGeometry args={[0.018, 0.005, 1.22]} />
-              <meshStandardMaterial
-                color="#e8c97d"
-                roughness={0.12}
-                metalness={0.95}
-                emissive="#e8c97d"
-                emissiveIntensity={0.25}
-              />
+              <boxGeometry args={[0.016, 0.004, 1.22]} />
+              <primitive object={matTraces} attach="material" />
             </mesh>
-            {/* SMD RGB LED diode */}
-            <mesh position={[0, 0.006, 0]}>
-              <boxGeometry args={[0.035, 0.008, 0.035]} />
-              <meshStandardMaterial
-                color="#fff5db"
-                emissive="#e8c97d"
-                emissiveIntensity={0.8}
-              />
-            </mesh>
+            {/* Animated SMD LED */}
+            <LEDDiode index={i} />
           </group>
         ))}
+
+        {/* Technical Callout 06: PCB Hot-Swap con RGB */}
+        <LayerCallout
+          layerNum="06"
+          category="PCB AUDIÓFILA"
+          title="PCB Hot-Swap con RGB"
+          description="Microcontrolador ARM Cortex-M0+ y LEDs SMD dinámicos."
+          spec="Polling 8,000 Hz"
+          side="right"
+          anchor={[1.72, 0.02, 0.2]}
+          scrollProgress={scrollProgress}
+          triggerProgress={0.74}
+          lineDirection="down"
+        />
       </group>
 
       {/* ── Layer 6: Solid CNC Bottom Case with PVD Brass Weight Bar ── */}
       <group ref={caseBRef}>
-        {/* Heavy Bottom Chassis */}
+        {/* Heavy Bottom Chassis — clearcoat anodized */}
         <RoundedBox args={[3.80, 0.18, 1.64]} radius={0.06} castShadow receiveShadow>
-          <meshStandardMaterial color="#151518" roughness={0.22} metalness={0.86} />
+          <primitive object={matAlumBottom} attach="material" />
         </RoundedBox>
 
-        {/* Inset Mirror-Polished PVD Brass Weight Bar (Iconic Custom Keyboard Detail) */}
+        {/* Inset Mirror-Polished PVD Brass Weight Bar */}
         <mesh position={[0, -0.091, 0]} geometry={weightBarGeo}>
-          <meshStandardMaterial
-            color="#e8c97d"
-            roughness={0.05}
-            metalness={0.98}
-          />
+          <primitive object={matWeightBar} attach="material" />
         </mesh>
 
-        {/* Laser-Etched Emblem Bar */}
+        {/* Laser-Etched Emblem lettering groove */}
         <mesh position={[0, -0.092, 0]}>
           <boxGeometry args={[1.2, 0.002, 0.12]} />
-          <meshStandardMaterial color="#a08544" roughness={0.3} metalness={0.9} />
+          <meshStandardMaterial color="#9a7e34" roughness={0.35} metalness={0.88} />
         </mesh>
 
         {/* Recessed Non-Slip Silicone Feet */}
         {[[-1.64, -0.62], [1.64, -0.62], [-1.64, 0.62], [1.64, 0.62]].map(([x, z], i) => (
           <mesh key={i} position={[x, -0.098, z]} geometry={footGeo}>
-            <meshStandardMaterial color="#1a1a1a" roughness={0.96} />
+            <primitive object={matFeet} attach="material" />
           </mesh>
         ))}
+
+        {/* Technical Callout 07: Chasis Inferior & Peso PVD */}
+        <LayerCallout
+          layerNum="07"
+          category="PESO & ESTABILIDAD"
+          title="Chasis Inferior & Barra PVD"
+          description="Barra de latón macizo pulida a espejo con recubrimiento PVD."
+          spec="Peso total 1.85 kg"
+          side="left"
+          anchor={[-1.75, -0.06, 0.5]}
+          scrollProgress={scrollProgress}
+          triggerProgress={0.85}
+          lineDirection="down"
+        />
       </group>
 
     </group>

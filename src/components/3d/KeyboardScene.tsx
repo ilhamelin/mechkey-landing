@@ -17,13 +17,17 @@ interface KeyboardSceneProps {
 function SceneLights() {
   return (
     <>
-      <ambientLight intensity={0.25} />
+      {/* Soft studio ambient */}
+      <ambientLight intensity={0.35} />
+
+      {/* Main warm key light with soft shadow map */}
       <directionalLight
         position={[5, 8, 5]}
-        intensity={2.2}
-        color="#fff8e7"
+        intensity={2.4}
+        color="#fff9f0"
         castShadow
-        shadow-mapSize={[1024, 1024]}
+        shadow-mapSize={[2048, 2048]}
+        shadow-bias={-0.0001}
         shadow-camera-far={18}
         shadow-camera-near={0.1}
         shadow-camera-left={-5}
@@ -31,8 +35,15 @@ function SceneLights() {
         shadow-camera-top={5}
         shadow-camera-bottom={-5}
       />
-      <directionalLight position={[-4, 2, -3]} intensity={0.5} color="#4a90d9" />
-      <pointLight position={[0, -2, 2]} intensity={0.3} color="#e8c97d" />
+
+      {/* Cool contrasting fill light */}
+      <directionalLight position={[-5, 3, 2]} intensity={0.65} color="#5ba4e6" />
+
+      {/* Rim light from top-rear to illuminate aluminum chamfers & keycap silhouettes */}
+      <directionalLight position={[0, 5, -6]} intensity={1.8} color="#ffe8b0" />
+
+      {/* Under-case reflection light for gold PVD brass weight */}
+      <pointLight position={[0, -2, 2]} intensity={0.45} color="#e8c97d" distance={8} />
     </>
   );
 }
@@ -113,7 +124,7 @@ export default function KeyboardScene({ scrollProgress }: KeyboardSceneProps) {
         powerPreference: 'high-performance',
       }}
       onCreated={({ gl }) => {
-        gl.shadowMap.type = THREE.PCFShadowMap;
+        gl.shadowMap.type = THREE.PCFSoftShadowMap;
       }}
       style={{ background: 'transparent', pointerEvents: 'none' }}
       frameloop="always"
