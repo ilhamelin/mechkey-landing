@@ -1,18 +1,24 @@
 import type { NextConfig } from "next";
 
+const isProd = process.env.NODE_ENV === "production";
+const repoName = "mechkey-landing";
+
 const nextConfig: NextConfig = {
+  output: "export",
+  basePath: isProd ? `/${repoName}` : "",
+  assetPrefix: isProd ? `/${repoName}/` : "",
+  images: {
+    unoptimized: true,
+  },
   reactStrictMode: true,
-  // Turbopack config (Next.js 16+)
   turbopack: {
     rules: {
-      // Load GLSL shader files as raw strings
       "*.{glsl,vert,frag,vs,fs}": {
         loaders: ["raw-loader"],
         as: "*.js",
       },
     },
   },
-  // Transpile Three.js ecosystem
   transpilePackages: ["three"],
 };
 

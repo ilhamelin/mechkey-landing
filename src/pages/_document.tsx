@@ -17,7 +17,7 @@ export default function Document() {
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
-        <link rel="icon" href="/favicon.ico" />
+        <link rel="icon" href={process.env.NODE_ENV === 'production' ? '/mechkey-landing/favicon.ico' : '/favicon.ico'} />
       </Head>
       <body className="noise-overlay">
         <Main />
