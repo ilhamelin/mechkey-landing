@@ -1,5 +1,6 @@
 'use client';
-import { motion, type Variants } from 'framer-motion';
+import { useState } from 'react';
+import { motion, type Variants, AnimatePresence } from 'framer-motion';
 
 const fadeUp: Variants = {
   hidden: { opacity: 0, y: 32 },
@@ -14,8 +15,35 @@ const fadeUp: Variants = {
   }),
 };
 
+// ── Colorways ──
+export type Colorway = 'dark' | 'cream' | 'stealth' | 'arctic';
+
+const COLORWAYS: Record<Colorway, { label: string; body: string; accent: string; accentGlow: string; border: string; tag: string }> = {
+  dark:    { label: 'Dark',    body: 'linear-gradient(135deg,#1c1c1c 0%,#141414 60%,#0e0e0e 100%)', accent: '#e8c97d', accentGlow: 'rgba(232,201,125,0.12)', border: 'rgba(232,201,125,0.12)', tag: 'DARK OPS' },
+  cream:   { label: 'Cream',   body: 'linear-gradient(135deg,#eae2d4 0%,#d8cdb8 60%,#c9b99a 100%)', accent: '#8b6914', accentGlow: 'rgba(139,105,20,0.18)', border: 'rgba(139,105,20,0.22)', tag: 'VINTAGE CREAM' },
+  stealth: { label: 'Stealth', body: 'linear-gradient(135deg,#111118 0%,#0a0a12 60%,#060610 100%)', accent: '#7b8cde', accentGlow: 'rgba(123,140,222,0.18)', border: 'rgba(123,140,222,0.18)', tag: 'STEALTH BLUE' },
+  arctic:  { label: 'Arctic',  body: 'linear-gradient(135deg,#1a2430 0%,#111c28 60%,#0a131e 100%)', accent: '#5dc8e0', accentGlow: 'rgba(93,200,224,0.15)', border: 'rgba(93,200,224,0.15)', tag: 'ARCTIC TEAL' },
+};
+
+// ── Key metadata for interactive keymap ──
+const KEY_INFO: Record<string, { material: string; note: string }> = {
+  '0-0':  { material: 'PBT Double-shot', note: 'Esc — programable vía VIA' },
+  '0-13': { material: 'ABS Translúcido', note: 'Backspace — actuación 45g' },
+  '1-0':  { material: 'PBT Double-shot', note: 'Tab — 1.5u, stabilizador Cherry' },
+  '2-0':  { material: 'PBT Double-shot', note: 'CapsLock — LED status dorado' },
+  '3-0':  { material: 'PBT XL', note: 'Shift — 2.25u, silicioso' },
+  '4-0':  { material: 'Aluminio CNC', note: 'Fn Knob — encoder rotativo' },
+};
+
+interface KeyboardIllustrationProps {
+  colorway: Colorway;
+  activeKey: string | null;
+  onKeyHover: (key: string | null) => void;
+}
+
 // Decorative keyboard illustration (CSS/SVG — no WebGL context used here)
-function KeyboardIllustration() {
+function KeyboardIllustration({ colorway, activeKey, onKeyHover }: KeyboardIllustrationProps) {
+  const cw = COLORWAYS[colorway];
   const rows = [14, 14, 13, 12, 10];
   return (
     <div
@@ -32,27 +60,24 @@ function KeyboardIllustration() {
       {/* Main keyboard body */}
       <div
         style={{
-          background: 'linear-gradient(135deg, #1c1c1c 0%, #141414 60%, #0e0e0e 100%)',
+          background: cw.body,
           borderRadius: 16,
           padding: '18px 22px 22px',
-          boxShadow: `
-            0 0 0 1px rgba(232,201,125,0.12),
-            0 40px 80px rgba(0,0,0,0.7),
-            0 8px 24px rgba(0,0,0,0.5),
-            inset 0 1px 0 rgba(255,255,255,0.06)
-          `,
+          boxShadow: `0 0 0 1px ${cw.border}, 0 40px 80px rgba(0,0,0,0.7), 0 8px 24px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)`,
           transform: 'rotateX(18deg) rotateY(-4deg)',
           transformStyle: 'preserve-3d',
           animation: 'heroFloat 5s ease-in-out infinite',
+          transition: 'background 0.5s ease, box-shadow 0.5s ease',
         }}
       >
         {/* Top accent strip */}
         <div style={{
           height: 2,
-          background: 'linear-gradient(90deg, transparent, #e8c97d, #c8a45a, transparent)',
+          background: `linear-gradient(90deg, transparent, ${cw.accent}, transparent)`,
           borderRadius: 1,
           marginBottom: 16,
           opacity: 0.6,
+          transition: 'background 0.5s ease',
         }} />
 
         {/* Key rows */}
@@ -60,25 +85,37 @@ function KeyboardIllustration() {
           {rows.map((cols, rowIdx) => (
             <div key={rowIdx} style={{ display: 'flex', gap: 4, justifyContent: 'center' }}>
               {Array.from({ length: cols }).map((_, colIdx) => {
+                const keyId = `${rowIdx}-${colIdx}`;
                 const isAccent = (rowIdx === 0 && (colIdx === 0 || colIdx === cols - 1)) ||
                   (rowIdx === 1 && colIdx === 0) ||
                   (rowIdx === 4 && colIdx === 0);
                 const isWide = colIdx === 0 && rowIdx > 1;
+                const hasInfo = !!KEY_INFO[keyId];
+                const isHovered = activeKey === keyId;
                 return (
                   <div
                     key={colIdx}
+                    onMouseEnter={() => hasInfo ? onKeyHover(keyId) : undefined}
+                    onMouseLeave={() => onKeyHover(null)}
                     style={{
                       width: isWide ? 48 : 28,
                       height: 24,
                       borderRadius: 4,
                       background: isAccent
-                        ? 'linear-gradient(135deg, #e8c97d, #c8a45a)'
-                        : 'linear-gradient(180deg, #2a2a2a 0%, #1e1e1e 100%)',
-                      boxShadow: isAccent
-                        ? '0 2px 4px rgba(0,0,0,0.5), 0 0 8px rgba(232,201,125,0.2), inset 0 1px 0 rgba(255,255,255,0.1)'
-                        : '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
-                      border: '1px solid rgba(255,255,255,0.05)',
+                        ? `linear-gradient(135deg, ${cw.accent}, ${cw.accent}cc)`
+                        : colorway === 'cream'
+                          ? 'linear-gradient(180deg, #d0c5b0 0%, #c4b8a0 100%)'
+                          : 'linear-gradient(180deg, #2a2a2a 0%, #1e1e1e 100%)',
+                      boxShadow: isHovered
+                        ? `0 2px 4px rgba(0,0,0,0.5), 0 0 12px ${cw.accentGlow}, inset 0 1px 0 rgba(255,255,255,0.15)`
+                        : isAccent
+                          ? `0 2px 4px rgba(0,0,0,0.5), 0 0 8px ${cw.accentGlow}, inset 0 1px 0 rgba(255,255,255,0.1)`
+                          : '0 2px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.04)',
+                      border: `1px solid ${isHovered ? cw.accent + '80' : 'rgba(255,255,255,0.05)'}`,
                       flexShrink: 0,
+                      cursor: hasInfo ? 'default' : 'default',
+                      transform: isHovered ? 'translateZ(4px) scale(1.08)' : 'translateZ(0) scale(1)',
+                      transition: 'all 0.18s ease',
                     }}
                   />
                 );
@@ -96,11 +133,11 @@ function KeyboardIllustration() {
           paddingTop: 8,
           borderTop: '1px solid rgba(255,255,255,0.05)',
         }}>
-          <span style={{ fontSize: 8, fontFamily: 'monospace', color: '#555', letterSpacing: '0.14em' }}>
+          <span style={{ fontSize: 8, fontFamily: 'monospace', color: colorway === 'cream' ? '#888' : '#555', letterSpacing: '0.14em' }}>
             STRATA // 6061-T6
           </span>
-          <span style={{ fontSize: 8, fontFamily: 'monospace', color: 'rgba(232,201,125,0.6)', letterSpacing: '0.1em' }}>
-            [ ANSI/ISO 75% ]
+          <span style={{ fontSize: 8, fontFamily: 'monospace', color: cw.accent + '99', letterSpacing: '0.1em', transition: 'color 0.4s' }}>
+            [ {cw.tag} ]
           </span>
         </div>
       </div>
@@ -120,7 +157,51 @@ function KeyboardIllustration() {
   );
 }
 
+// ── Color Configurator Panel ──
+function ColorConfigurator({ colorway, onChange }: { colorway: Colorway; onChange: (c: Colorway) => void }) {
+  return (
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 8,
+      position: 'absolute',
+      right: 16,
+      top: '50%',
+      transform: 'translateY(-50%)',
+      zIndex: 20,
+    }}>
+      <div style={{ fontSize: 9, fontFamily: 'monospace', color: '#444', letterSpacing: '0.12em', marginBottom: 4, textAlign: 'right' }}>COLORWAY</div>
+      {(Object.keys(COLORWAYS) as Colorway[]).map((cw) => {
+        const active = cw === colorway;
+        return (
+          <button
+            key={cw}
+            title={COLORWAYS[cw].label}
+            onClick={() => onChange(cw)}
+            style={{
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              background: COLORWAYS[cw].accent,
+              border: `2px solid ${active ? COLORWAYS[cw].accent : 'rgba(255,255,255,0.08)'}`,
+              boxShadow: active ? `0 0 0 3px rgba(255,255,255,0.06), 0 0 12px ${COLORWAYS[cw].accentGlow}` : 'none',
+              cursor: 'pointer',
+              transition: 'all 0.25s',
+              transform: active ? 'scale(1.15)' : 'scale(1)',
+              alignSelf: 'flex-end',
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export default function HeroSection() {
+  const [colorway, setColorway] = useState<Colorway>('dark');
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  const keyInfo = activeKey ? KEY_INFO[activeKey] : null;
+
   return (
     <section
       id="hero"
@@ -391,7 +472,44 @@ export default function HeroSection() {
         animate={{ opacity: 1, scale: 1, x: 0 }}
         transition={{ duration: 1, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
       >
-        <KeyboardIllustration />
+        <KeyboardIllustration
+          colorway={colorway}
+          activeKey={activeKey}
+          onKeyHover={setActiveKey}
+        />
+        <ColorConfigurator colorway={colorway} onChange={setColorway} />
+
+        {/* Interactive key tooltip */}
+        <AnimatePresence>
+          {keyInfo && (
+            <motion.div
+              initial={{ opacity: 0, y: 6, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 6, scale: 0.95 }}
+              transition={{ duration: 0.18 }}
+              style={{
+                position: 'absolute',
+                bottom: 8,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                background: 'rgba(10,10,10,0.92)',
+                border: '1px solid rgba(232,201,125,0.2)',
+                borderRadius: 8,
+                padding: '8px 16px',
+                zIndex: 30,
+                backdropFilter: 'blur(12px)',
+                textAlign: 'center',
+                pointerEvents: 'none',
+                minWidth: 180,
+              }}
+            >
+              <div style={{ fontSize: 10, color: '#e8c97d', fontFamily: 'monospace', letterSpacing: '0.08em', marginBottom: 2 }}>
+                {keyInfo.material}
+              </div>
+              <div style={{ fontSize: 11, color: '#888' }}>{keyInfo.note}</div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </motion.div>
 
       </div>{/* end hero-grid */}

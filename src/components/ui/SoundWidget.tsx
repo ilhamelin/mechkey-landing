@@ -3,6 +3,18 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { playSwitchSound, SwitchProfile } from '@/lib/sound';
 
+const SWITCH_META: Record<SwitchProfile, { emoji: string; desc: string; freq: string; color: string }> = {
+  thock:  { emoji: '🔔', desc: 'Bajo profundo, resonancia cálida', freq: 'Baja–Media', color: '#e8c97d' },
+  clack:  { emoji: '⚡', desc: 'Clic nítido, tacto definido',      freq: 'Alta',       color: '#7dc8e8' },
+  creamy: { emoji: '🫧', desc: 'Suave y silencioso, fluido',       freq: 'Muy Baja',   color: '#9de87d' },
+};
+
+const BAR_HEIGHTS: Record<SwitchProfile, number[]> = {
+  thock:  [4, 10, 14, 12, 6],
+  clack:  [6, 14, 10, 14, 12],
+  creamy: [8, 6,  10, 5,  8 ],
+};
+
 export default function SoundWidget() {
   const [profile, setProfile] = useState<SwitchProfile>('thock');
   const [muted, setMuted] = useState(false);
@@ -104,9 +116,10 @@ export default function SoundWidget() {
               </div>
 
               {/* Switch Profiles */}
-              <div style={{ display: 'flex', gap: 6, marginBottom: 14 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 14 }}>
                 {(['thock', 'clack', 'creamy'] as SwitchProfile[]).map((p) => {
                   const active = profile === p;
+                  const meta = SWITCH_META[p];
                   return (
                     <button
                       key={p}
@@ -115,21 +128,35 @@ export default function SoundWidget() {
                         triggerSound(p);
                       }}
                       style={{
-                        flex: 1,
-                        padding: '6px 0',
-                        fontSize: 11,
+                        width: '100%',
+                        padding: '8px 12px',
+                        fontSize: 12,
                         fontFamily: 'var(--font-display)',
                         textTransform: 'capitalize',
-                        background: active ? 'rgba(232, 201, 125, 0.12)' : 'rgba(255,255,255,0.03)',
-                        border: `1px solid ${active ? 'var(--accent-primary)' : 'rgba(255,255,255,0.08)'}`,
+                        background: active ? 'rgba(232, 201, 125, 0.08)' : 'rgba(255,255,255,0.02)',
+                        border: `1px solid ${active ? meta.color + '80' : 'rgba(255,255,255,0.06)'}`,
                         color: active ? '#f0f0f0' : '#777',
-                        borderRadius: 6,
+                        borderRadius: 8,
                         cursor: 'pointer',
                         transition: 'all 0.2s',
                         fontWeight: active ? 600 : 400,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        textAlign: 'left',
                       }}
                     >
-                      {p}
+                      <span>{meta.emoji}</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 1 }}>{p}</div>
+                        <div style={{ fontSize: 10, color: active ? '#888' : '#555', fontWeight: 400 }}>{meta.desc}</div>
+                      </div>
+                      {/* Mini spectrum */}
+                      <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 14 }}>
+                        {BAR_HEIGHTS[p].map((h, bi) => (
+                          <div key={bi} style={{ width: 2.5, height: h, borderRadius: 1, background: active ? meta.color : 'rgba(255,255,255,0.12)', transition: 'background 0.3s' }} />
+                        ))}
+                      </div>
                     </button>
                   );
                 })}

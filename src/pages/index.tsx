@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import Navbar from '@/components/ui/Navbar';
 import HeroSection from '@/components/sections/HeroSection';
 import ScrollytellingSection from '@/components/sections/ScrollytellingSection';
+import StorySection from '@/components/sections/StorySection';
 import SpecsSection from '@/components/sections/SpecsSection';
 import CTASection from '@/components/sections/CTASection';
 
@@ -29,6 +30,7 @@ const Home: NextPage = () => {
       <main>
         <HeroSection />
         <ScrollytellingSection />
+        <StorySection />
         <SpecsSection />
         <CTASection />
       </main>
