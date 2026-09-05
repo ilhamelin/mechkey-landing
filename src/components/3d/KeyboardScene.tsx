@@ -7,6 +7,9 @@ import { BlendFunction } from 'postprocessing';
 import * as THREE from 'three';
 import KeyboardModel from './KeyboardModel';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const EffectComposerAny = EffectComposer as React.ComponentType<any>;
+
 interface KeyboardSceneProps {
   scrollProgress: number;
 }
@@ -131,7 +134,7 @@ export default function KeyboardScene({ scrollProgress }: KeyboardSceneProps) {
       />
 
       {/* Lightweight post-processing — only Bloom */}
-      <EffectComposer multisampling={0} disableNormalPass>
+      <EffectComposerAny multisampling={0}>
         <Bloom
           intensity={0.35}
           luminanceThreshold={0.85}
@@ -139,7 +142,7 @@ export default function KeyboardScene({ scrollProgress }: KeyboardSceneProps) {
           blendFunction={BlendFunction.ADD}
           mipmapBlur
         />
-      </EffectComposer>
+      </EffectComposerAny>
     </Canvas>
   );
 }
