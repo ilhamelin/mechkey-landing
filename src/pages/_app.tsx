@@ -1,10 +1,11 @@
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import '@/styles/globals.css';
+import { ThemeProvider } from '@/lib/theme';
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <>
+    <ThemeProvider>
       <Head>
         <meta
           name="viewport"
@@ -12,6 +13,6 @@ export default function App({ Component, pageProps }: AppProps) {
         />
       </Head>
       <Component {...pageProps} />
-    </>
+    </ThemeProvider>
   );
 }

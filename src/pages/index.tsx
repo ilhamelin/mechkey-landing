@@ -12,6 +12,7 @@ import CTASection from '@/components/sections/CTASection';
 const CustomCursor = dynamic(() => import('@/components/ui/CustomCursor'), { ssr: false });
 const PageLoader   = dynamic(() => import('@/components/ui/PageLoader'),   { ssr: false });
 const SoundWidget  = dynamic(() => import('@/components/ui/SoundWidget'),  { ssr: false });
+const LiveTicker   = dynamic(() => import('@/components/ui/LiveTicker'),   { ssr: false });
 
 const Home: NextPage = () => {
   return (
@@ -24,6 +25,7 @@ const Home: NextPage = () => {
       <PageLoader />
       <CustomCursor />
       <SoundWidget />
+      <LiveTicker />
 
       <Navbar />
 

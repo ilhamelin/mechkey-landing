@@ -1,6 +1,6 @@
 'use client';
-import { Suspense, useState, useEffect } from 'react';
-import { Canvas, useThree } from '@react-three/fiber';
+import { Suspense, useState, useEffect, useRef } from 'react';
+import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { Environment, ContactShadows, PerformanceMonitor, Sparkles } from '@react-three/drei';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import { BlendFunction } from 'postprocessing';
@@ -64,6 +64,38 @@ function ResponsiveCameraController() {
   return null;
 }
 
+// Cinematic camera: smoothly orbits the keyboard as user scrolls
+function CinematicCamera({ scrollProgress }: { scrollProgress: number }) {
+  const { camera, size } = useThree();
+  const smoothed = useRef(0);
+
+  useFrame((_, delta) => {
+    // Smooth the scroll progress
+    smoothed.current += (scrollProgress - smoothed.current) * (1 - Math.pow(0.005, delta));
+    const s = smoothed.current;
+    const isMobile = size.width < 768;
+
+    // Base position
+    const baseX = 0;
+    const baseY = isMobile ? 2.0 : 1.9;
+    const baseZ = isMobile ? 7.8 : 6.2;
+
+    // Cinematic orbit: x shifts left → right, y tilts up, z zooms out slightly
+    const targetX = baseX + Math.sin(s * Math.PI) * 0.8;
+    const targetY = baseY + s * 0.6;
+    const targetZ = baseZ + s * 0.5;
+
+    camera.position.x += (targetX - camera.position.x) * 0.08;
+    camera.position.y += (targetY - camera.position.y) * 0.06;
+    camera.position.z += (targetZ - camera.position.z) * 0.06;
+
+    // Always look slightly toward keyboard center
+    camera.lookAt(0, 0, 0);
+  });
+
+  return null;
+}
+
 export default function KeyboardScene({ scrollProgress }: KeyboardSceneProps) {
   // State-based DPR so PerformanceMonitor can actually update the canvas
   const [dpr, setDpr] = useState<number>(1.5);
@@ -87,6 +119,7 @@ export default function KeyboardScene({ scrollProgress }: KeyboardSceneProps) {
       frameloop="always"
     >
       <ResponsiveCameraController />
+      <CinematicCamera scrollProgress={scrollProgress} />
 
       {/* Adaptive DPR — react to GPU load */}
       <PerformanceMonitor

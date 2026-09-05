@@ -30,11 +30,40 @@
   --transition-slow: 700ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* ─── Light Mode (Vintage Cream) ─── */
+html.light {
+  --bg-primary: #f5f0e8;
+  --bg-secondary: #ede6d8;
+  --bg-card: rgba(0, 0, 0, 0.03);
+  --border: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(0, 0, 0, 0.18);
+
+  --text-primary: #1a1410;
+  --text-secondary: #7a6e5e;
+  --text-muted: #b0a090;
+
+  --accent-primary: #8b6914;
+  --accent-secondary: #a07820;
+  --accent-glow: rgba(139, 105, 20, 0.12);
+  --accent-rgb: 139, 105, 20;
+}
+
+html.light body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: var(--accent-primary);
+}
+
+
 /* ─── Reset & Base ─── */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+  transition: background-color var(--transition-med), color var(--transition-med), border-color var(--transition-med);
 }
 
 html {

@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useTheme } from '@/lib/theme';
 
 const NAV_SECTIONS = [
   { href: '#hero',         label: 'Inicio',   id: 'hero' },
@@ -13,6 +14,7 @@ export default function Navbar() {
   const [scrolled, setScrolled]     = useState(false);
   const [active, setActive]         = useState('hero');
   const [menuOpen, setMenuOpen]     = useState(false);
+  const { theme, toggle }           = useTheme();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60);
@@ -155,6 +157,31 @@ export default function Navbar() {
           }}>
             {sectionLabel}
           </span>
+
+          {/* Theme toggle */}
+          <button
+            id="theme-toggle"
+            onClick={toggle}
+            title={theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.08)',
+              borderRadius: 8,
+              width: 34,
+              height: 34,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              fontSize: 14,
+              transition: 'all 0.2s',
+              flexShrink: 0,
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(232,201,125,0.4)'; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = 'rgba(255,255,255,0.08)'; }}
+          >
+            {theme === 'dark' ? '☀️' : '🌙'}
+          </button>
 
           <a href="#cta" id="nav-reservar" className="btn-primary" style={{ padding: '8px 20px', fontSize: 13 }}>
             Reservar
