@@ -1,9 +1,15 @@
 'use client';
-import { useRef, useState } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RoundedBox, Html } from '@react-three/drei';
 import * as THREE from 'three';
 import { lerp } from '@/lib/animation';
+import {
+  getPBTTexture,
+  getBrushedMetalTexture,
+  getCarbonFiberTexture,
+  getChassisSerigraphyTexture,
+} from '@/lib/textures';
 
 export type ModularFinish = 'bronce' | 'carbono' | 'titanium';
 
@@ -13,60 +19,6 @@ interface HeroModularModelProps {
   accentColor?: string;
   onHoverPart?: (part: string | null) => void;
 }
-
-// ── Shared Materials ──
-const matKeycapDark = new THREE.MeshPhysicalMaterial({
-  color: new THREE.Color('#16171b'),
-  roughness: 0.58,
-  metalness: 0.04,
-  clearcoat: 0.12,
-  clearcoatRoughness: 0.7,
-});
-
-const matKeycapGold = new THREE.MeshPhysicalMaterial({
-  color: new THREE.Color('#d4aa48'),
-  roughness: 0.18,
-  metalness: 0.90,
-  clearcoat: 0.65,
-  clearcoatRoughness: 0.08,
-  envMapIntensity: 2.0,
-});
-
-const matSwitchPlate = new THREE.MeshPhysicalMaterial({
-  color: new THREE.Color('#c59b48'),
-  roughness: 0.20,
-  metalness: 0.88,
-  clearcoat: 0.4,
-  clearcoatRoughness: 0.1,
-});
-
-const matGasketDampener = new THREE.MeshStandardMaterial({
-  color: new THREE.Color('#0a0a0c'),
-  roughness: 0.98,
-  metalness: 0.0,
-});
-
-const matSwitchHousing = new THREE.MeshPhysicalMaterial({
-  color: new THREE.Color('#e0e8f0'),
-  roughness: 0.15,
-  metalness: 0.1,
-  transparent: true,
-  opacity: 0.75,
-});
-
-const matSwitchStem = new THREE.MeshStandardMaterial({
-  color: new THREE.Color('#d93829'), // Red switch stem
-  roughness: 0.3,
-  metalness: 0.1,
-});
-
-const matPogoPin = new THREE.MeshStandardMaterial({
-  color: new THREE.Color('#e8c97d'),
-  roughness: 0.08,
-  metalness: 1.0,
-  emissive: new THREE.Color('#c89824'),
-  emissiveIntensity: 0.35,
-});
 
 // ── Key layout matching Image 1 ──
 interface KeyPos {
@@ -88,7 +40,7 @@ const HERO_KEYS: KeyPos[] = (() => {
     keys.push({
       x: startX + c * stepX,
       z: startZ,
-      isAccent: c === 0 || c === 13, // Esc and top-right corner are gold
+      isAccent: c === 0 || c === 13, // Esc and top-right corner are gold (Image 1)
     });
   }
   // Row 1: Number row (14 keys)
@@ -117,7 +69,7 @@ const HERO_KEYS: KeyPos[] = (() => {
   keys.push({ x: startX, z: startZ + stepZ * 4, isAccent: true }); // Bottom-left mod is gold (Image 1)
   keys.push({ x: startX + stepX, z: startZ + stepZ * 4 });
   keys.push({ x: startX + stepX * 2, z: startZ + stepZ * 4 });
-  // Spacebar (wide, matte dark as in Image 1)
+  // Spacebar (wide, matte dark PBT as in Image 1)
   keys.push({ x: -0.06, z: startZ + stepZ * 4, w: 1.08, isAccent: false });
   keys.push({ x: 0.64, z: startZ + stepZ * 4 });
   keys.push({ x: 0.85, z: startZ + stepZ * 4 });
@@ -142,48 +94,139 @@ export default function HeroModularModel({
   // Expansion animation factor (0 = snapped closed, 1 = modular expanded)
   const expandFactor = useRef(isExpanded ? 1 : 0);
 
-  // Dynamic PBR materials based on selected modular finish
-  const matModular = (() => {
+  // Procedural PBR textures
+  const pbtTexture = useMemo(() => getPBTTexture(), []);
+  const brushedTexture = useMemo(() => getBrushedMetalTexture(), []);
+  const carbonTexture = useMemo(() => getCarbonFiberTexture(), []);
+  const serigraphyTexture = useMemo(() => getChassisSerigraphyTexture(), []);
+
+  // ── Materials with procedural texture maps ──
+  const matKeycapDark = useMemo(() => {
+    return new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color('#16171b'),
+      bumpMap: pbtTexture,
+      bumpScale: 0.003,
+      roughness: 0.58,
+      metalness: 0.04,
+      clearcoat: 0.12,
+      clearcoatRoughness: 0.7,
+    });
+  }, [pbtTexture]);
+
+  const matKeycapGold = useMemo(() => {
+    return new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color('#d4aa48'),
+      bumpMap: brushedTexture,
+      bumpScale: 0.0015,
+      roughness: 0.18,
+      metalness: 0.92,
+      clearcoat: 0.7,
+      clearcoatRoughness: 0.08,
+      envMapIntensity: 2.2,
+    });
+  }, [brushedTexture]);
+
+  const matSwitchPlate = useMemo(() => {
+    return new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color('#c59b48'),
+      bumpMap: brushedTexture,
+      bumpScale: 0.002,
+      roughness: 0.20,
+      metalness: 0.88,
+      clearcoat: 0.4,
+      clearcoatRoughness: 0.1,
+    });
+  }, [brushedTexture]);
+
+  const matGasketDampener = useMemo(() => {
+    return new THREE.MeshStandardMaterial({
+      color: new THREE.Color('#0a0a0c'),
+      roughness: 0.98,
+      metalness: 0.0,
+    });
+  }, []);
+
+  const matSwitchHousing = useMemo(() => {
+    return new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color('#e0e8f0'),
+      roughness: 0.15,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.75,
+    });
+  }, []);
+
+  const matSwitchStem = useMemo(() => {
+    return new THREE.MeshStandardMaterial({
+      color: new THREE.Color('#d93829'), // Red switch stem (Image 2)
+      roughness: 0.3,
+      metalness: 0.1,
+    });
+  }, []);
+
+  const matPogoPin = useMemo(() => {
+    return new THREE.MeshStandardMaterial({
+      color: new THREE.Color('#e8c97d'),
+      roughness: 0.08,
+      metalness: 1.0,
+      emissive: new THREE.Color('#c89824'),
+      emissiveIntensity: 0.35,
+    });
+  }, []);
+
+  const matChassisBase = useMemo(() => {
+    return new THREE.MeshPhysicalMaterial({
+      color: new THREE.Color('#141418'),
+      bumpMap: brushedTexture,
+      bumpScale: 0.003,
+      roughness: 0.22,
+      metalness: 0.88,
+      clearcoat: 0.45,
+      clearcoatRoughness: 0.1,
+      envMapIntensity: 1.5,
+    });
+  }, [brushedTexture]);
+
+  // Modular finish material
+  const matModular = useMemo(() => {
     switch (finish) {
+      case 'carbono':
+        return new THREE.MeshPhysicalMaterial({
+          color: new THREE.Color('#1a1a1e'),
+          map: carbonTexture,
+          bumpMap: carbonTexture,
+          bumpScale: 0.004,
+          roughness: 0.32,
+          metalness: 0.25,
+          clearcoat: 0.85,
+          clearcoatRoughness: 0.06,
+          envMapIntensity: 2.0,
+        });
       case 'bronce':
         return new THREE.MeshPhysicalMaterial({
           color: new THREE.Color('#c59b48'),
+          bumpMap: brushedTexture,
+          bumpScale: 0.003,
           roughness: 0.16,
-          metalness: 0.92,
-          clearcoat: 0.65,
-          clearcoatRoughness: 0.08,
-          envMapIntensity: 2.2,
-        });
-      case 'carbono':
-        return new THREE.MeshPhysicalMaterial({
-          color: new THREE.Color('#141416'),
-          roughness: 0.48,
-          metalness: 0.38,
-          clearcoat: 0.18,
-          clearcoatRoughness: 0.5,
-          envMapIntensity: 1.0,
+          metalness: 0.94,
+          clearcoat: 0.70,
+          clearcoatRoughness: 0.06,
+          envMapIntensity: 2.4,
         });
       case 'titanium':
       default:
         return new THREE.MeshPhysicalMaterial({
-          color: new THREE.Color('#262830'),
+          color: new THREE.Color('#282a34'),
+          bumpMap: brushedTexture,
+          bumpScale: 0.0025,
           roughness: 0.22,
-          metalness: 0.88,
-          clearcoat: 0.5,
+          metalness: 0.90,
+          clearcoat: 0.55,
           clearcoatRoughness: 0.1,
-          envMapIntensity: 1.7,
+          envMapIntensity: 1.8,
         });
     }
-  })();
-
-  const matChassisBase = new THREE.MeshPhysicalMaterial({
-    color: new THREE.Color('#141418'),
-    roughness: 0.22,
-    metalness: 0.88,
-    clearcoat: 0.45,
-    clearcoatRoughness: 0.1,
-    envMapIntensity: 1.5,
-  });
+  }, [finish, carbonTexture, brushedTexture]);
 
   useFrame((state, delta) => {
     const t = state.clock.elapsedTime;
@@ -194,19 +237,16 @@ export default function HeroModularModel({
     const ef = expandFactor.current;
 
     // Modular Quick-Release Rails expansion positions
-    // Top rail lifts and moves back
     if (topRailRef.current) {
       topRailRef.current.position.y = 0.12 + ef * 0.32;
       topRailRef.current.position.z = -0.92 - ef * 0.48;
     }
 
-    // Left rail floats out to the left
     if (leftRailRef.current) {
       leftRailRef.current.position.x = -1.98 - ef * 0.65;
       leftRailRef.current.position.y = 0.02 + ef * 0.08;
     }
 
-    // Right rail floats out to the right
     if (rightRailRef.current) {
       rightRailRef.current.position.x = 1.98 + ef * 0.65;
       rightRailRef.current.position.y = 0.02 + ef * 0.08;
@@ -226,73 +266,62 @@ export default function HeroModularModel({
       {/* ── 1. Thick Sandwich Mechanical Keyboard Body (Image 2 + Image 1) ── */}
       <group>
 
-        {/* ── Layer A: Heavy CNC Aluminum Bottom Chassis ── */}
-        <RoundedBox args={[3.80, 0.16, 1.84]} radius={0.05} position={[0, -0.12, 0]} castShadow receiveShadow>
+        {/* ── Layer A: Heavy CNC Aluminum Bottom Chassis (Image 2) ── */}
+        <RoundedBox args={[3.80, 0.18, 1.84]} radius={0.05} position={[0, -0.13, 0]} castShadow receiveShadow>
           <primitive object={matChassisBase} attach="material" />
         </RoundedBox>
 
         {/* ── Layer B: Acoustic Gasket & Dampening Core Lip (Visible Sandwich Split) ── */}
         <mesh position={[0, -0.03, 0]}>
-          <boxGeometry args={[3.72, 0.04, 1.76]} />
+          <boxGeometry args={[3.72, 0.045, 1.76]} />
           <primitive object={matGasketDampener} attach="material" />
         </mesh>
 
         {/* ── Layer C: Champagne Anodized Switch Mounting Plate (Sandwich Lip) ── */}
         <mesh position={[0, -0.005, 0]} castShadow receiveShadow>
-          <boxGeometry args={[3.74, 0.03, 1.78]} />
+          <boxGeometry args={[3.76, 0.035, 1.78]} />
           <primitive object={matSwitchPlate} attach="material" />
         </mesh>
 
         {/* ── Layer D: Chunky Top Bezel CNC Plate with Wide Forehead (Image 1) ── */}
-        <RoundedBox args={[3.80, 0.16, 1.84]} radius={0.05} position={[0, 0.08, 0]} castShadow receiveShadow>
+        <RoundedBox args={[3.80, 0.18, 1.84]} radius={0.05} position={[0, 0.09, 0]} castShadow receiveShadow>
           <primitive object={matModular} attach="material" />
         </RoundedBox>
 
         {/* Inner Recessed Key Well (Keys sit inside this pocket) */}
-        <mesh position={[0, 0.13, 0.04]}>
-          <boxGeometry args={[3.24, 0.07, 1.28]} />
+        <mesh position={[0, 0.14, 0.04]}>
+          <boxGeometry args={[3.24, 0.08, 1.28]} />
           <meshStandardMaterial color="#0d0e12" roughness={0.8} metalness={0.2} />
         </mesh>
 
-        {/* Fine gold frame surrounding the key cluster pocket */}
-        <mesh position={[0, 0.162, 0.04]}>
-          <boxGeometry args={[3.26, 0.002, 1.30]} />
-          <meshStandardMaterial color={accentColor} roughness={0.15} metalness={0.95} />
+        {/* ── Decal Serigraphy directly on top of the 3D metal chassis (Image 1) ── */}
+        <mesh position={[0, 0.181, 0.04]} rotation={[-Math.PI / 2, 0, 0]}>
+          <planeGeometry args={[3.72, 1.78]} />
+          <meshBasicMaterial map={serigraphyTexture} transparent opacity={0.92} depthWrite={false} />
         </mesh>
 
         {/* ── Forehead Details (Above Keys, exact match to Image 1) ── */}
         {/* Horizontal glowing gold light diffuser strip */}
-        <mesh position={[0, 0.163, -0.66]}>
+        <mesh position={[0, 0.182, -0.66]}>
           <boxGeometry args={[1.65, 0.008, 0.028]} />
           <meshStandardMaterial color="#fff4cc" emissive="#e8c97d" emissiveIntensity={1.5} roughness={0.1} />
         </mesh>
 
         {/* Laser/CNC milled accent slot on the left of light strip */}
-        <mesh position={[-1.15, 0.162, -0.66]}>
+        <mesh position={[-1.15, 0.181, -0.66]}>
           <boxGeometry args={[0.38, 0.003, 0.014]} />
           <meshStandardMaterial color="#08080a" roughness={0.9} metalness={0.3} />
         </mesh>
 
         {/* Laser/CNC milled accent slot on the right of light strip */}
-        <mesh position={[1.15, 0.162, -0.66]}>
+        <mesh position={[1.15, 0.181, -0.66]}>
           <boxGeometry args={[0.38, 0.003, 0.014]} />
           <meshStandardMaterial color="#08080a" roughness={0.9} metalness={0.3} />
         </mesh>
 
-        {/* ── Top Plate Serigraphy & Traces (Image 1) ── */}
-        {/* Fine gold laser circuit routes along forehead & borders */}
-        <mesh position={[-1.25, 0.162, -0.32]}>
-          <boxGeometry args={[0.012, 0.002, 0.62]} />
-          <meshStandardMaterial color="rgba(232, 201, 125, 0.6)" roughness={0.1} metalness={0.9} />
-        </mesh>
-        <mesh position={[1.25, 0.162, -0.32]}>
-          <boxGeometry args={[0.012, 0.002, 0.62]} />
-          <meshStandardMaterial color="rgba(232, 201, 125, 0.6)" roughness={0.1} metalness={0.9} />
-        </mesh>
-
         {/* Mechanical Switches visible under keycaps (Image 2 detail) */}
         {HERO_KEYS.map((k, i) => (
-          <group key={`sw-${i}`} position={[k.x, 0.11, k.z]}>
+          <group key={`sw-${i}`} position={[k.x, 0.12, k.z]}>
             {/* Clear switch housing */}
             <mesh position={[0, 0, 0]}>
               <boxGeometry args={[0.15, 0.05, 0.15]} />
@@ -306,15 +335,18 @@ export default function HeroModularModel({
           </group>
         ))}
 
-        {/* ── Sculpted Keycaps with Rounded Bevels (Image 1 detail) ── */}
+        {/* ── Sculpted Keycaps with Micro-Beveled Edges (Image 1 detail) ── */}
         <group>
           {HERO_KEYS.map((k, i) => {
             const isFnKey = k.z === -0.38;
             const w = k.w || 0.185;
             return (
-              <mesh
+              <RoundedBox
                 key={`key-${i}`}
-                position={[k.x, 0.175, k.z]}
+                args={[w, 0.09, 0.185]}
+                radius={0.02}
+                smoothness={4}
+                position={[k.x, 0.19, k.z]}
                 onPointerOver={(e) => {
                   e.stopPropagation();
                   if (isFnKey) {
@@ -330,64 +362,11 @@ export default function HeroModularModel({
                 }}
                 castShadow
               >
-                <boxGeometry args={[w, 0.08, 0.18]} />
                 <primitive object={k.isAccent ? matKeycapGold : matKeycapDark} attach="material" />
-              </mesh>
+              </RoundedBox>
             );
           })}
         </group>
-
-        {/* Gold Frame Highlight around the Function Row (Image 1) */}
-        <group position={[-0.01, 0.22, -0.38]}>
-          {/* Subtle glowing frame enclosing the function keys */}
-          <lineSegments>
-            <edgesGeometry args={[new THREE.BoxGeometry(2.88, 0.005, 0.21)]} />
-            <lineBasicMaterial color="#e8c97d" linewidth={1.5} transparent opacity={0.65} />
-          </lineSegments>
-        </group>
-
-        {/* Top Chassis Laser Serigraphy Text (Image 1) */}
-        <Html
-          position={[0, 0.165, 0.72]}
-          transform
-          rotation={[-Math.PI / 2, 0, 0]}
-          occlude={false}
-          style={{
-            width: 700,
-            height: 40,
-            pointerEvents: 'none',
-            userSelect: 'none',
-          }}
-        >
-          <div style={{
-            width: '100%',
-            height: '100%',
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            padding: '0 20px',
-            boxSizing: 'border-box',
-          }}>
-            <span style={{
-              fontFamily: 'monospace',
-              fontSize: '11px',
-              fontWeight: 700,
-              color: 'rgba(232, 201, 125, 0.85)',
-              letterSpacing: '0.14em',
-            }}>
-              STRATA [J] 0067 T0
-            </span>
-            <span style={{
-              fontFamily: 'monospace',
-              fontSize: '11px',
-              fontWeight: 700,
-              color: 'rgba(232, 201, 125, 0.95)',
-              letterSpacing: '0.14em',
-            }}>
-              [ DARE OPS ]
-            </span>
-          </div>
-        </Html>
 
         {/* Magnetic contact pins on Core Flanks */}
         {[-0.5, 0, 0.5].map((z, idx) => (
@@ -421,25 +400,25 @@ export default function HeroModularModel({
         }}
       >
         {/* Chunky Outer CNC Body */}
-        <RoundedBox args={[3.96, 0.20, 0.20]} radius={0.04} castShadow>
+        <RoundedBox args={[3.96, 0.22, 0.22]} radius={0.04} castShadow>
           <primitive object={matModular} attach="material" />
         </RoundedBox>
 
         {/* Chamfer Accent Line */}
-        <mesh position={[0, 0.102, 0]}>
+        <mesh position={[0, 0.112, 0]}>
           <boxGeometry args={[3.88, 0.002, 0.15]} />
           <meshStandardMaterial color={accentColor} roughness={0.1} metalness={0.9} emissive={accentColor} emissiveIntensity={0.15} />
         </mesh>
 
         {/* Stepped inner groove channel where it locks to chassis */}
         <mesh position={[0, -0.02, 0.095]}>
-          <boxGeometry args={[3.80, 0.12, 0.02]} />
+          <boxGeometry args={[3.80, 0.14, 0.02]} />
           <meshStandardMaterial color="#08080a" roughness={0.8} />
         </mesh>
 
         {/* Gold magnetic contact pads */}
         {[-0.9, 0, 0.9].map((x, i) => (
-          <mesh key={`top-pin-${i}`} position={[x, 0, 0.102]}>
+          <mesh key={`top-pin-${i}`} position={[x, 0, 0.112]}>
             <cylinderGeometry args={[0.016, 0.016, 0.01, 8]} />
             <primitive object={matPogoPin} attach="material" />
           </mesh>
@@ -461,19 +440,19 @@ export default function HeroModularModel({
         }}
       >
         {/* Chunky Outer CNC Body */}
-        <RoundedBox args={[0.20, 0.20, 1.96]} radius={0.04} castShadow>
+        <RoundedBox args={[0.22, 0.22, 1.96]} radius={0.04} castShadow>
           <primitive object={matModular} attach="material" />
         </RoundedBox>
 
         {/* Inner stepped lip that mates with chassis */}
-        <mesh position={[0.095, -0.01, 0]}>
-          <boxGeometry args={[0.02, 0.14, 1.84]} />
+        <mesh position={[0.105, -0.01, 0]}>
+          <boxGeometry args={[0.02, 0.15, 1.84]} />
           <meshStandardMaterial color="#0a0a0d" roughness={0.8} />
         </mesh>
 
         {/* Pogo pin contacts */}
         {[-0.5, 0, 0.5].map((z, idx) => (
-          <mesh key={`left-pin-${idx}`} position={[0.102, 0.02, z]}>
+          <mesh key={`left-pin-${idx}`} position={[0.112, 0.02, z]}>
             <cylinderGeometry args={[0.016, 0.016, 0.01, 8]} />
             <primitive object={matPogoPin} attach="material" />
           </mesh>
@@ -495,19 +474,19 @@ export default function HeroModularModel({
         }}
       >
         {/* Chunky Outer CNC Body */}
-        <RoundedBox args={[0.20, 0.20, 1.96]} radius={0.04} castShadow>
+        <RoundedBox args={[0.22, 0.22, 1.96]} radius={0.04} castShadow>
           <primitive object={matModular} attach="material" />
         </RoundedBox>
 
         {/* Inner stepped lip that mates with chassis */}
-        <mesh position={[-0.095, -0.01, 0]}>
-          <boxGeometry args={[0.02, 0.14, 1.84]} />
+        <mesh position={[-0.105, -0.01, 0]}>
+          <boxGeometry args={[0.02, 0.15, 1.84]} />
           <meshStandardMaterial color="#0a0a0d" roughness={0.8} />
         </mesh>
 
         {/* Pogo pin contacts */}
         {[-0.5, 0, 0.5].map((z, idx) => (
-          <mesh key={`right-pin-${idx}`} position={[-0.102, 0.02, z]}>
+          <mesh key={`right-pin-${idx}`} position={[-0.112, 0.02, z]}>
             <cylinderGeometry args={[0.016, 0.016, 0.01, 8]} />
             <primitive object={matPogoPin} attach="material" />
           </mesh>
@@ -515,7 +494,7 @@ export default function HeroModularModel({
       </group>
 
       {/* ── 3. Technical Blueprint Laser Floor Plane (Image 1) ── */}
-      <group position={[0, -0.21, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <group position={[0, -0.23, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <Html
           position={[0, 0, 0]}
           transform
@@ -586,7 +565,7 @@ export default function HeroModularModel({
       </group>
 
       {/* ── 4. Interactive Callout Tooltip matching Image 1 exactly ── */}
-      <group position={[0.35, 0.24, -0.38]}>
+      <group position={[0.35, 0.25, -0.38]}>
         <Html center={false} style={{ pointerEvents: 'none' }}>
           <div
             style={{

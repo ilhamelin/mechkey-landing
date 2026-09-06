@@ -2,13 +2,13 @@ import type { NextPage } from 'next';
 import Head from 'next/head';
 import dynamic from 'next/dynamic';
 import Navbar from '@/components/ui/Navbar';
-import HeroSection from '@/components/sections/HeroSection';
 import ScrollytellingSection from '@/components/sections/ScrollytellingSection';
 import StorySection from '@/components/sections/StorySection';
 import SpecsSection from '@/components/sections/SpecsSection';
 import CTASection from '@/components/sections/CTASection';
 
-// Lazy-load non-critical UI
+// Lazy-load interactive / client-only components
+const HeroSection  = dynamic(() => import('@/components/sections/HeroSection'),  { ssr: false });
 const CustomCursor = dynamic(() => import('@/components/ui/CustomCursor'), { ssr: false });
 const PageLoader   = dynamic(() => import('@/components/ui/PageLoader'),   { ssr: false });
 const SoundWidget  = dynamic(() => import('@/components/ui/SoundWidget'),  { ssr: false });

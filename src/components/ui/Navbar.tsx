@@ -16,8 +16,35 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen]     = useState(false);
   const { theme, toggle }           = useTheme();
 
+  // Handle smooth scroll to top and sequence reset
+  const handleHomeClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setActive('hero');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('strata:reset-hero'));
+    }
+  };
+
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60);
+    const onScroll = () => {
+      const scrollY = window.scrollY;
+      setScrolled(scrollY > 40);
+
+      // If near the top or inside the hero pin sequence, guarantee active is 'hero'
+      if (scrollY <= 2400) {
+        const heroEl = document.getElementById('hero');
+        if (heroEl) {
+          const rect = heroEl.getBoundingClientRect();
+          if (rect.top <= 100 && rect.bottom >= 100) {
+            setActive('hero');
+          }
+        } else if (scrollY < 300) {
+          setActive('hero');
+        }
+      }
+    };
+
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
@@ -27,13 +54,16 @@ export default function Navbar() {
     const observers: IntersectionObserver[] = [];
 
     NAV_SECTIONS.forEach(({ id }) => {
+      if (id === 'hero') return; // Handled reliably via scroll listener
       const el = document.getElementById(id);
       if (!el) return;
       const obs = new IntersectionObserver(
         ([entry]) => {
-          if (entry.isIntersecting) setActive(id);
+          if (entry.isIntersecting) {
+            setActive(id);
+          }
         },
-        { threshold: 0.25, rootMargin: '-80px 0px -20% 0px' }
+        { threshold: 0.2, rootMargin: '-64px 0px -40% 0px' }
       );
       obs.observe(el);
       observers.push(obs);
@@ -42,7 +72,7 @@ export default function Navbar() {
     return () => observers.forEach((o) => o.disconnect());
   }, []);
 
-  const activeIndex = NAV_SECTIONS.findIndex((s) => s.id === active);
+  const activeIndex = Math.max(0, NAV_SECTIONS.findIndex((s) => s.id === active));
   const sectionLabel = `0${activeIndex + 1} / 0${NAV_SECTIONS.length}`;
 
   return (
@@ -62,17 +92,18 @@ export default function Navbar() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          background: scrolled ? 'rgba(8,8,8,0.88)' : 'transparent',
-          backdropFilter: scrolled ? 'blur(20px)' : 'none',
-          WebkitBackdropFilter: scrolled ? 'blur(20px)' : 'none',
-          borderBottom: scrolled ? '1px solid rgba(255,255,255,0.05)' : '1px solid transparent',
-          transition: 'all 0.4s ease',
+          background: scrolled ? 'rgba(8,8,8,0.92)' : 'rgba(8,8,8,0.45)',
+          backdropFilter: 'blur(16px)',
+          WebkitBackdropFilter: 'blur(16px)',
+          borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : '1px solid rgba(255,255,255,0.02)',
+          transition: 'all 0.3s ease',
         }}
       >
         {/* Logo */}
         <a
           href="#hero"
           id="nav-logo"
+          onClick={handleHomeClick}
           style={{
             fontFamily: 'var(--font-display)',
             fontWeight: 700,
@@ -83,6 +114,7 @@ export default function Navbar() {
             display: 'flex',
             alignItems: 'center',
             gap: 8,
+            cursor: 'pointer',
           }}
         >
           <span style={{
@@ -108,14 +140,16 @@ export default function Navbar() {
                 <a
                   href={link.href}
                   id={`nav-${link.id}`}
+                  onClick={link.id === 'hero' ? handleHomeClick : undefined}
                   style={{
                     fontSize: 13,
-                    color: isActive ? '#f0f0f0' : '#555',
+                    color: isActive ? '#f0f0f0' : 'rgba(255,255,255,0.65)',
                     textDecoration: 'none',
                     letterSpacing: '0.04em',
-                    fontWeight: isActive ? 500 : 400,
-                    transition: 'color 0.3s',
+                    fontWeight: isActive ? 600 : 400,
+                    transition: 'color 0.25s',
                     paddingBottom: 4,
+                    cursor: 'pointer',
                   }}
                 >
                   {link.label}
@@ -130,9 +164,10 @@ export default function Navbar() {
                         bottom: -2,
                         left: 0,
                         right: 0,
-                        height: 1,
+                        height: 1.5,
                         background: 'var(--accent-primary)',
                         borderRadius: 1,
+                        boxShadow: '0 0 6px rgba(232,201,125,0.6)',
                       }}
                       initial={{ scaleX: 0 }}
                       animate={{ scaleX: 1 }}
@@ -148,10 +183,10 @@ export default function Navbar() {
           {/* Section counter */}
           <span style={{
             fontSize: 11,
-            color: '#333',
+            color: active === 'hero' ? '#e8c97d' : 'rgba(255,255,255,0.5)',
             letterSpacing: '0.1em',
-            fontFamily: 'var(--font-display)',
-            minWidth: 42,
+            fontFamily: 'monospace',
+            minWidth: 46,
             textAlign: 'right',
             transition: 'color 0.3s',
           }}>
@@ -243,7 +278,12 @@ export default function Navbar() {
               <motion.a
                 key={link.href}
                 href={link.href}
-                onClick={() => setMenuOpen(false)}
+                onClick={(e) => {
+                  setMenuOpen(false);
+                  if (link.id === 'hero') {
+                    handleHomeClick(e);
+                  }
+                }}
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 }}
