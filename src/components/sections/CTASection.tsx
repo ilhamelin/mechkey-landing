@@ -174,8 +174,15 @@ export default function CTASection() {
             className="cta-form"
             onSubmit={(e) => { e.preventDefault(); if (email) setDone(true); }}
           >
+            <label htmlFor="email-input" className="sr-only">
+              Correo electrónico para reservar
+            </label>
             <input
               id="email-input"
+              name="email"
+              autoComplete="email"
+              maxLength={254}
+              aria-label="Correo electrónico para reservar"
               className="cta-input"
               type="email"
               required
@@ -206,7 +213,7 @@ export default function CTASection() {
             }}>
               ¡Estás en la lista!
             </div>
-            <div style={{ fontSize: 13, color: '#555' }}>
+            <div style={{ fontSize: 13, color: '#a1a1aa' }}>
               Te avisamos en cuanto abra la venta.
             </div>
           </div>
@@ -232,7 +239,7 @@ export default function CTASection() {
               key={item.label}
               className="pricing-col"
             >
-              <div style={{ fontSize: 9, color: '#3a3a3a', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
+              <div style={{ fontSize: 9.5, color: '#888888', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 6 }}>
                 {item.label}
               </div>
               <div
@@ -247,7 +254,7 @@ export default function CTASection() {
               >
                 {item.value}
               </div>
-              <div style={{ fontSize: 11, color: '#333' }}>{item.note}</div>
+              <div style={{ fontSize: 11, color: '#71717a' }}>{item.note}</div>
             </div>
           ))}
         </div>

@@ -10,6 +10,8 @@ export default function Document() {
         <meta property="og:title" content="STRATA — Teclado Mecánico Modular" />
         <meta property="og:description" content="Ingeniería sin compromisos. Aluminio 6061-T6 mecanizado CNC. 500 unidades." />
         <meta property="og:type" content="website" />
+        <meta httpEquiv="X-Content-Type-Options" content="nosniff" />
+        <meta name="referrer" content="strict-origin-when-cross-origin" />
         {/* Preconnect to Google Fonts */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
@@ -17,7 +19,7 @@ export default function Document() {
           href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap"
           rel="stylesheet"
         />
-        <link rel="icon" href={process.env.NODE_ENV === 'production' ? '/mechkey-landing/favicon.ico' : '/favicon.ico'} />
+        <link rel="icon" href={`${process.env.NEXT_PUBLIC_BASE_PATH || ''}/favicon.ico`} />
       </Head>
       <body className="noise-overlay">
         <Main />

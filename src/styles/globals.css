@@ -114,6 +114,30 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--accent-primary);
 }
 
+/* ─── Accessible Keyboard Focus (WCAG 2.4.7) ─── */
+:focus-visible {
+  outline: 2px solid var(--accent-primary);
+  outline-offset: 3px;
+}
+
+/* ─── Accessible Placeholder Contrast (WCAG 1.4.3) ─── */
+::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ─── Screen Reader Only Utility ─── */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* ─── Utility Classes ─── */
 .container {
   max-width: 1200px;

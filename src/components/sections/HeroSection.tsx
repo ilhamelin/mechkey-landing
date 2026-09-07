@@ -401,16 +401,18 @@ export default function HeroSection({
       style={{
         position: 'relative',
         width: '100%',
-        height: '100vh',
+        height: '100dvh',
         minHeight: '700px',
         backgroundColor: '#080808',
         overflow: 'hidden',
       }}
     >
-      {/* ── Background Canvas ── */}
+      {/* ── Background Canvas with Screen Reader Accessibility ── */}
       <canvas
         ref={canvasRef}
         className="hero-sequence-canvas"
+        role="img"
+        aria-label="Animación interactiva del teclado mecánico STRATA desensamblándose en sus componentes mediante el desplazamiento"
         style={{
           position: 'absolute',
           inset: 0,
@@ -420,7 +422,11 @@ export default function HeroSection({
           pointerEvents: 'none',
           zIndex: 1,
         }}
-      />
+      >
+        <p className="sr-only">
+          Animación interactiva: al desplazarse verticalmente por la pantalla, el teclado mecánico STRATA se desensambla capa a capa mostrando su chasis unificado de aluminio CNC, marco superior, placa de latón con suspensión gasket mount y base con PCB hot-swap.
+        </p>
+      </canvas>
 
       {/* ── Soft Vignette Overlay for Text Legibility (No hard cutoffs) ── */}
       <div
