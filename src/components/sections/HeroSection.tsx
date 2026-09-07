@@ -56,11 +56,33 @@ export default function HeroSection({
     dpr: 1,
   });
 
-  // Zero-padded 4-digit frame formatting
+  // Zero-padded 4-digit frame formatting with automatic basePath resolution (GitHub Pages support)
   const getFrameUrl = useCallback(
     (index: number): string => {
       const padded = String(index + 1).padStart(4, '0');
-      return `${folderPath}${padded}.jpg`;
+
+      // If folderPath is an absolute URL (http:// or https://), return directly
+      if (folderPath.startsWith('http://') || folderPath.startsWith('https://')) {
+        return `${folderPath}${padded}.jpg`;
+      }
+
+      // Automatically resolve Next.js basePath in production (GitHub Pages)
+      let bp = '';
+      if (typeof window !== 'undefined') {
+        const winNextData = (window as unknown as { __NEXT_DATA__?: { basePath?: string } }).__NEXT_DATA__;
+        if (winNextData?.basePath) {
+          bp = winNextData.basePath;
+        } else if (process.env.NEXT_PUBLIC_BASE_PATH) {
+          bp = process.env.NEXT_PUBLIC_BASE_PATH;
+        }
+      } else if (process.env.NEXT_PUBLIC_BASE_PATH) {
+        bp = process.env.NEXT_PUBLIC_BASE_PATH;
+      }
+
+      const cleanBp = bp.replace(/\/+$/, '');
+      const cleanFolder = folderPath.startsWith('/') ? folderPath : `/${folderPath}`;
+
+      return `${cleanBp}${cleanFolder}${padded}.jpg`;
     },
     [folderPath]
   );
