@@ -47,6 +47,7 @@ export default function HeroSection({
   const imagesRef = useRef<(HTMLImageElement | null)[]>([]);
   const currentFrameRef = useRef<number>(0);
   const animationFrameIdRef = useRef<number | null>(null);
+  const tweenRef = useRef<gsap.core.Tween | null>(null);
   const scrollTriggerRef = useRef<ScrollTrigger | null>(null);
   const frameObjRef = useRef<{ frame: number }>({ frame: 0 });
   const canvasSizeRef = useRef<{ width: number; height: number; dpr: number }>({
@@ -302,6 +303,7 @@ export default function HeroSection({
         },
       });
 
+      tweenRef.current = tween;
       scrollTriggerRef.current = tween.scrollTrigger ?? null;
     }, heroEl);
 
@@ -317,9 +319,8 @@ export default function HeroSection({
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       frameObj.frame = 0;
-      if (scrollTriggerRef.current) {
-        scrollTriggerRef.current.scroll(0);
-        scrollTriggerRef.current.progress(0);
+      if (tweenRef.current) {
+        tweenRef.current.progress(0);
       }
       setScrollProgress(0);
       requestDraw(0);
@@ -332,6 +333,7 @@ export default function HeroSection({
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('strata:reset-hero', handleResetHero);
       ctx.revert();
+      tweenRef.current = null;
       scrollTriggerRef.current = null;
     };
   }, [totalFrames, scrollDistance, requestDraw, updateCanvasDimensions]);
